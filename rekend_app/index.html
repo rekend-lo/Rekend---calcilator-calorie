@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Rekend - считатель калорий</title>
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="data:application/manifest+json,{'name':'Rekend','short_name':'Rekend','start_url':'.','display':'standalone','background_color':'#050505','theme_color':'#7c3aed'}">
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { 
+            background-color: #050505; 
+            color: #ffffff; 
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .bg-card { background: #111; border: 1px solid #222; border-radius: 30px; }
+        .purple-glow { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: #a855f7;
+            box-shadow: 0 0 15px #a855f7;
+            animation: move 2s infinite linear;
+        }
+        @keyframes move {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const DATABASE = {
+            "burger": { name: "Бургер", total: 620, items: [{n: "Булка", k: 150}, {n: "Котлета", k: 310}, {n: "Сыр", k: 160}] },
+            "pizza": { name: "Пицца", total: 850, items: [{n: "Тесто", k: 450}, {n: "Сыр", k: 300}, {n: "Соус", k: 100}] },
+            "apple": { name: "Яблоко", total: 95, items: [{n: "Мякоть", k: 95}] },
+            "steak": { name: "Стейк", total: 720, items: [{n: "Мясо", k: 650}, {n: "Масло", k: 70}] },
+            "sushi": { name: "Роллы", total: 480, items: [{n: "Рис", k: 250}, {n: "Рыба", k: 180}] }
+        };
+
+        function App() {
+            const [photo, setPhoto] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [data, setData] = useState(null);
+
+            const onUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    setPhoto(reader.result);
+                    setData(null);
+                    setLoading(true);
+                    
+                    setTimeout(() => {
+                        const name = file.name.toLowerCase();
+                        let match = null;
+                        for (let key in DATABASE) {
+                            if (name.includes(key)) match = DATABASE[key];
+                        }
+                        setData(match || DATABASE["burger"]);
+                        setLoading(false);
+                    }, 2000);
+                };
+                reader.readAsDataURL(file);
+            };
+
+            return (
+                <div className="flex flex-col min-h-screen p-5 items-center">
+                    <h1 className="text-xl font-black text-purple-500 my-6 tracking-tighter italic uppercase text-center">
+                        🍔 Rekend - считатель калорий
+                    </h1>
+                    
+                    <div className="w-full aspect-[3/4] bg-card overflow-hidden relative mb-6 purple-glow">
+                        {photo ? (
+                            <img src={photo} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-zinc-700 font-bold">ФОТО НЕ ВЫБРАНО</div>
+                        )}
+                        {loading && <div className="scan-line"></div>}
+                    </div>
+
+                    {!data && !loading && (
+                        <label className="w-full bg-purple-600 py-5 rounded-2xl text-center font-black text-white text-lg active:scale-95 transition-transform shadow-lg shadow-purple-900/40 cursor-pointer">
+                            ОТКРЫТЬ КАМЕРУ / ФАЙЛ
+                            <input type="file" className="hidden" onChange={onUpload} accept="image/*" />
+                        </label>
+                    )}
+
+                    {data && !loading && (
+                        <div className="w-full bg-zinc-900 p-6 rounded-[2rem] animate-in fade-in slide-in-from-bottom-5 border border-zinc-800">
+                            <h2 className="text-xl font-bold mb-4 text-purple-400">{data.name}</h2>
+                            <div className="space-y-2 mb-6 text-sm">
+                                {data.items.map((item, i) => (
+                                    <div key={i} className="flex justify-between text-zinc-400">
+                                        <span>• {item.n}</span>
+                                        <span className="text-white font-bold">{item.k} ккал</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="bg-purple-700 p-4 rounded-xl flex justify-between items-center">
+                                <span className="font-bold text-xs uppercase tracking-wider">ИТОГО:</span>
+                                <span className="text-2xl font-black">{data.total} ккал</span>
+                            </div>
+                            <button onClick={() => setPhoto(null) || setData(null)} className="w-full mt-6 text-zinc-600 font-bold text-[10px] uppercase tracking-widest">Сбросить</button>
+                        </div>
+                    )}
+
+                    <footer className="mt-auto py-6">
+                        <p className="text-[12px] text-zinc-600 font-black tracking-widest uppercase">By Rekend</p>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
